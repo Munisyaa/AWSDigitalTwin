@@ -1,1 +1,61 @@
+# Upload your Excel file first in Colab
+from google.colab import files
+uploaded = files.upload()
 
+# Read dataset
+df = pd.read_excel("EV_cars.xlsx")
+
+# Keep only the columns we need
+df = df[[
+    "Battery",
+    "Efficiency",
+    "Fast_charge",
+    "Top_speed",
+    "acceleration..0.100.",
+    "Range"
+]]
+
+# Drop missing values
+df = df.dropna()
+
+# Features and target
+X = df[[
+    "Battery",
+    "Efficiency",
+    "Fast_charge",
+    "Top_speed",
+    "acceleration..0.100."
+]]
+y = df["Range"]
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Train model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Predict
+y_pred = model.predict(X_test)
+
+# Evaluation
+mae = mean_absolute_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("MAE:", mae)
+print("R2 Score:", r2)
+
+# Print coefficients
+print("\nModel Equation:")
+print("Range =")
+for feature, coef in zip(X.columns, model.coef_):
+    print(f"{coef:.4f} * {feature}")
+print(f"+ {model.intercept_:.4f}")
+
+# Save model
+joblib.dump(model, "ev_range_model.pkl")
+
+# Download model file
+files.download("ev_range_model.pkl")
