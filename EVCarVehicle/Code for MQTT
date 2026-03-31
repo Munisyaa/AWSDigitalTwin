@@ -1,1 +1,83 @@
+import json
+import time
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
+client = AWSIoTMQTTClient("EVCarPublisher")
+client.configureEndpoint("ab6qlfr196ke0-ats.iot.ap-southeast-2.amazonaws.com", 8883)
+client.configureCredentials(
+    r"C:\Users\User\Desktop\AWS\AmazonRootCA1 (1).pem",
+    r"C:\Users\User\Desktop\AWS\c943aff994c94b6df35d26ca3cc279a49b5b988038c6d2cfb40e13b3ff3b7556-private.pem.key",
+    r"C:\Users\User\Desktop\AWS\c943aff994c94b6df35d26ca3cc279a49b5b988038c6d2cfb40e13b3ff3b7556-certificate.pem.crt"
+)
+
+client.configureOfflinePublishQueueing(-1)
+client.configureDrainingFrequency(2)
+client.configureConnectDisconnectTimeout(10)
+client.configureMQTTOperationTimeout(5)
+
+TOPIC = "ev/car/data"
+JSON_FILE = r"C:\Users\User\Desktop\AWS\csvjson.json"
+
+try:
+    client.connect()
+    print("Connected to AWS IoT Core")
+
+    with open(JSON_FILE, "r", encoding="utf-8") as json_file:
+        car_data = json.load(json_file)
+
+    if isinstance(car_data, list):
+        for i, record in enumerate(car_data, start=1):
+            battery_value = record.get("Battery", 0)
+
+            if battery_value > 70:
+                mode = "Eco"
+            elif battery_value < 30:
+                mode = "Sport"
+            else:
+                mode = "Normal"
+
+            payload = {
+                "Vehicle_ID": "EV001",
+                "Battery": record.get("Battery", 0),
+                "Efficiency": record.get("Efficiency", 0),
+                "Fast_charge": record.get("Fast_charge", 0),
+                "Top_speed": record.get("Top_speed", 0),
+                "acceleration": record.get("acceleration..0.100.", record.get("acceleration", 0)),
+                "driving_mode": mode
+            }
+
+            client.publish(TOPIC, json.dumps(payload), 1)
+            print(f"Published {i}: {payload}")
+            time.sleep(2)
+
+    else:
+        battery_value = car_data.get("Battery", 0)
+
+        if battery_value > 70:
+            mode = "Eco"
+        elif battery_value < 30:
+            mode = "Sport"
+        else:
+            mode = "Normal"
+
+        payload = {
+            "Vehicle_ID": "EV001",
+            "Battery": car_data.get("Battery", 0),
+            "Efficiency": car_data.get("Efficiency", 0),
+            "Fast_charge": car_data.get("Fast_charge", 0),
+            "Top_speed": car_data.get("Top_speed", 0),
+            "acceleration": car_data.get("acceleration..0.100.", car_data.get("acceleration", 0)),
+            "driving_mode": mode
+        }
+
+        client.publish(TOPIC, json.dumps(payload), 1)
+        print("Published:", payload)
+
+except Exception as e:
+    print(f"Error: {e}")
+
+finally:
+    try:
+        client.disconnect()
+    except Exception:
+        pass
