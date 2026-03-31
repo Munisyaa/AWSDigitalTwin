@@ -1,1 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EV Dashboard</title>
+    <style>
+        body { font-family: Arial; text-align: center; background: #111; color: white; }
+        .card { background: #222; padding: 20px; margin: 20px auto; border-radius: 10px; width: 60%; }
+        p { font-size: 20px; }
+    </style>
+</head>
+<body>
+    <h1>EV Digital Twin Dashboard</h1>
 
+    <div class="card">
+        <h2 id="vehicle">Vehicle: loading...</h2>
+        <p id="battery">Battery: ...</p>
+        <p id="range">Range: ...</p>
+        <p id="efficiency">Efficiency: ...</p>
+        <p id="status">Status: ...</p>
+        <p id="mode">Mode: ...</p>
+    </div>
+
+    <script>
+        const API_URL = "https://mxsq3bvtek.execute-api.ap-southeast-2.amazonaws.com/default/getEVTimeSeries";
+
+        async function loadData() {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) {
+                    throw new Error("HTTP " + res.status);
+                }
+
+                const data = await res.json();
+
+                document.getElementById("vehicle").innerText = "Vehicle: " + (data.Vehicle_ID || "N/A");
+                document.getElementById("battery").innerText = "Battery: " + (data.Battery ?? "N/A") + "%";
+                document.getElementById("range").innerText = "Range: " + (data.Predicted_Range_km ?? "N/A") + " km";
+                document.getElementById("efficiency").innerText = "Efficiency: " + (data.Efficiency ?? "N/A");
+                document.getElementById("status").innerText = "Status: " + (data.battery_health_status || "N/A");
+                document.getElementById("mode").innerText = "Mode: " + (data.driving_mode || "N/A");
+            } catch (err) {
+                console.error(err);
+                document.getElementById("vehicle").innerText = "Error loading data";
+                document.getElementById("battery").innerText = err.message;
+            }
+        }
+
+        loadData();
+        setInterval(loadData, 5000);
+    </script>
+</body>
+</html>
